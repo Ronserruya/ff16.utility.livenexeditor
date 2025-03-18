@@ -1,80 +1,87 @@
 {
-  "ModId": "ff16.utility.livenexeditor",
-  "ModName": "Live Nex Editor",
-  "ModAuthor": "Recoome",
-  "ModVersion": "1.0.0",
-  "ModDescription": "Allows editing of nex values in realtime.",
-  "ModDll": "ff16.utility.livenexeditor.dll",
-  "ModR2RManagedDll32": "x86/ff16.utility.livenexeditor.dll",
-  "ModR2RManagedDll64": "x64/ff16.utility.livenexeditor.dll",
-  "ModNativeDll32": "",
-  "ModNativeDll64": "",
-  "Tags": [],
-  "CanUnload": null,
-  "HasExports": null,
-  "IsLibrary": false,
-  "ReleaseMetadataFileName": "ff16.utility.livenexeditor.ReleaseMetadata.json",
-  "PluginData": {
-    "GitHubDependencies": {
-        "IdToConfigMap": {
-            "ff16.utility.framework": {
-                "Config": {
-                    "UserName": "Nenkai",
-                    "RepositoryName": "FF16Framework",
-                    "UseReleaseTag": true,
-                    "AssetFileName": "Mod.zip"
+    "ModId": "ff16.utility.livenexeditor",
+    "ModName": "Live Nex Editor",
+    "ModAuthor": "Recoome",
+    "ModVersion": "1.0.0",
+    "ModDescription": "Allows editing of nex values in realtime.",
+    "ModDll": "ff16.utility.livenexeditor.dll",
+    "ModR2RManagedDll32": "x86/ff16.utility.livenexeditor.dll",
+    "ModR2RManagedDll64": "x64/ff16.utility.livenexeditor.dll",
+    "ModNativeDll32": "",
+    "ModNativeDll64": "",
+    "Tags": [],
+    "CanUnload": null,
+    "HasExports": null,
+    "IsLibrary": false,
+    "ReleaseMetadataFileName": "ff16.utility.livenexeditor.ReleaseMetadata.json",
+    "PluginData": {
+        "GitHubDependencies": {
+            "IdToConfigMap": {
+                "ff16.utility.framework": {
+                    "Config": {
+                        "UserName": "Nenkai",
+                        "RepositoryName": "FF16Framework",
+                        "UseReleaseTag": true,
+                        "AssetFileName": "Mod.zip"
+                    },
+                    "ReleaseMetadataName": "FF16Framework.ReleaseMetadata.json"
                 },
-                "ReleaseMetadataName": "FF16Framework.ReleaseMetadata.json"
-            },
-            "ff16.utility.modloader": {
-                "Config": {
-                    "UserName": "Nenkai",
-                    "RepositoryName": "ff16.utility.modloader",
-                    "UseReleaseTag": true,
-                    "AssetFileName": "Mod.zip"
+                "ff16.utility.modloader": {
+                    "Config": {
+                        "UserName": "Nenkai",
+                        "RepositoryName": "ff16.utility.modloader",
+                        "UseReleaseTag": true,
+                        "AssetFileName": "Mod.zip"
+                    },
+                    "ReleaseMetadataName": "ff16.utility.modloader.ReleaseMetadata.json"
                 },
-                "ReleaseMetadataName": "ff16.utility.modloader.ReleaseMetadata.json"
-            },
-            "Reloaded.Memory.SigScan.ReloadedII": {
-                "Config": {
-                    "UserName": "Reloaded-Project",
-                    "RepositoryName": "Reloaded.Memory.SigScan",
-                    "UseReleaseTag": false,
-                    "AssetFileName": "Mod.zip"
+                "Reloaded.Memory.SigScan.ReloadedII": {
+                    "Config": {
+                        "UserName": "Reloaded-Project",
+                        "RepositoryName": "Reloaded.Memory.SigScan",
+                        "UseReleaseTag": false,
+                        "AssetFileName": "Mod.zip"
+                    },
+                    "ReleaseMetadataName": "Reloaded.Memory.SigScan.ReloadedII.ReleaseMetadata.json"
                 },
-                "ReleaseMetadataName": "Reloaded.Memory.SigScan.ReloadedII.ReleaseMetadata.json"
-            },
-            "reloaded.sharedlib.hooks": {
-                "Config": {
-                    "UserName": "Sewer56",
-                    "RepositoryName": "Reloaded.SharedLib.Hooks.ReloadedII",
-                    "UseReleaseTag": true,
-                    "AssetFileName": "reloaded.sharedlib.hooks.zip"
+                "reloaded.sharedlib.hooks": {
+                    "Config": {
+                        "UserName": "Sewer56",
+                        "RepositoryName": "Reloaded.SharedLib.Hooks.ReloadedII",
+                        "UseReleaseTag": true,
+                        "AssetFileName": "reloaded.sharedlib.hooks.zip"
+                    },
+                    "ReleaseMetadataName": "Sewer56.Update.ReleaseMetadata.json"
                 },
-                "ReleaseMetadataName": "Sewer56.Update.ReleaseMetadata.json"
-            },
-            "SharedScans.Reloaded": {
-                "Config": {
-                    "UserName": "RyoTune",
-                    "RepositoryName": "SharedScans",
-                    "UseReleaseTag": false,
-                    "AssetFileName": "Mod.zip"
-                },
-                "ReleaseMetadataName": "SharedScans.Reloaded.ReleaseMetadata.json"
+                "SharedScans.Reloaded": {
+                    "Config": {
+                        "UserName": "RyoTune",
+                        "RepositoryName": "SharedScans",
+                        "UseReleaseTag": false,
+                        "AssetFileName": "Mod.zip"
+                    },
+                    "ReleaseMetadataName": "SharedScans.Reloaded.ReleaseMetadata.json"
+                }
             }
+        },
+        "GitHubRelease": {
+            "UserName": "RonSerruya",
+            "RepositoryName": "ff16.utility.livenexeditor",
+            "UseReleaseTag": true,
+            "AssetFileName": "Mod.zip"
         }
-    }
-  },
-  "IsUniversalMod": false,
-  "ModDependencies": [
-    "ff16.utility.framework",
-    "ff16.utility.modloader",
-    "Reloaded.Memory.SigScan.ReloadedII",
-    "reloaded.sharedlib.hooks"
-  ],
-  "OptionalDependencies": [],
-  "SupportedAppId": [
-    "ffxvi.exe",
-    "ffxvi_demo.exe"
-  ]
+    },
+    "IsUniversalMod": false,
+    "ModDependencies": [
+        "ff16.utility.framework",
+        "ff16.utility.modloader",
+        "Reloaded.Memory.SigScan.ReloadedII",
+        "reloaded.sharedlib.hooks"
+    ],
+    "OptionalDependencies": [],
+    "SupportedAppId": [
+        "ffxvi.exe",
+        "ffxvi_demo.exe"
+    ],
+    "ProjectUrl": "https://github.com/Ronserruya/ff16.utility.livenexeditor"
 }

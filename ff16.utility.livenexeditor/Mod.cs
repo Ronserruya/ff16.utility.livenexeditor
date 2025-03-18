@@ -121,9 +121,9 @@ public class Mod : ModBase // <= Do not Remove.
             return;
         }
 
-        var _watcher = new FileSystemWatcher(_configuration.MonitorPath)
+        _watcher = new FileSystemWatcher(_configuration.MonitorPath)
         {
-            NotifyFilter = NotifyFilters.LastWrite,
+            NotifyFilter = NotifyFilters.LastWrite | NotifyFilters.FileName,
             EnableRaisingEvents = true
         };
 
