@@ -2,7 +2,7 @@
     "ModId": "ff16.utility.livenexeditor",
     "ModName": "Live Nex Editor",
     "ModAuthor": "Recoome",
-    "ModVersion": "1.0.0",
+    "ModVersion": "1.0.1",
     "ModDescription": "Allows editing of nex values in realtime.",
     "ModDll": "ff16.utility.livenexeditor.dll",
     "ModR2RManagedDll32": "x86/ff16.utility.livenexeditor.dll",

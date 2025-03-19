@@ -12,6 +12,7 @@ using FF16Tools.Files.Nex.Entities;
 using FF16Framework.Interfaces.Nex;
 
 using Microsoft.Data.Sqlite;
+using System.Text.Json;
 namespace ff16.utility.livenexeditor;
 
 /// <summary>
@@ -59,6 +60,8 @@ public class Mod : ModBase // <= Do not Remove.
     private string _sqlite_changes_table = "_liveNex_changes";
 
     private IDisposable? _fileChangedObservable;
+
+    private static JsonSerializerOptions _jsonSerializerOptions = new() { Converters = { JsonByteArrayConverter.Instance } };
 
     public WeakReference<INextExcelDBApiManaged> _managedNexApi;
 
@@ -260,6 +263,15 @@ public class Mod : ModBase // <= Do not Remove.
                     case NexColumnType.Float:
                         gameRow.SetSingle((uint)col.Value.Offset, (float)fileRowData[j]);
                         break;
+                    case NexColumnType.IntArray:
+                        HandleFileArrayChange(gameRow, col.Value, (int[])fileRowData[j], gameRow.GetIntArrayView((uint)col.Value.Offset));
+                        break;
+                    case NexColumnType.FloatArray:
+                        HandleFileArrayChange(gameRow, col.Value, (float[])fileRowData[j], gameRow.GetSingleArrayView((uint)col.Value.Offset));
+                        break;
+                    case NexColumnType.ByteArray:
+                        HandleFileArrayChange(gameRow, col.Value, (byte[])fileRowData[j], gameRow.GetByteArrayView((uint)col.Value.Offset));
+                        break;
                     default:
                         break;
                 }
@@ -341,7 +353,7 @@ public class Mod : ModBase // <= Do not Remove.
 
     }
 
-    private static unsafe void UpdateSingleRowFromReader(SqliteDataReader reader, NexTableLayout layout, INexRow gameRow)
+    private unsafe void UpdateSingleRowFromReader(SqliteDataReader reader, NexTableLayout layout, INexRow gameRow)
     {
 
         foreach (NexStructColumn column in layout.Columns.Values)
@@ -372,9 +384,49 @@ public class Mod : ModBase // <= Do not Remove.
                 case NexColumnType.Float:
                     gameRow.SetSingle((uint)column.Offset, val is not DBNull ? (float)(double)val : 0f);
                     break;
+                case NexColumnType.FloatArray:
+                    if (val is not DBNull)
+                        HandleSqlArrayChange(gameRow, column, val, gameRow.GetSingleArrayView((uint)column.Offset));
+                    break;
+                case NexColumnType.ByteArray:
+                    if (val is not DBNull)
+                        HandleSqlArrayChange(gameRow, column, val, gameRow.GetByteArrayView((uint)column.Offset));
+                    break;
+                case NexColumnType.IntArray:
+                    if (val is not DBNull)
+                        HandleSqlArrayChange(gameRow, column, val, gameRow.GetIntArrayView((uint)column.Offset));
+                    break;
                 default:
                     break;
             }
+        }
+    }
+
+    private void HandleSqlArrayChange<T>(INexRow gameRow, NexStructColumn column, object val, Span<T> existingArray)
+    {
+        if (existingArray.IsEmpty) { return; }
+        var newArray = JsonSerializer.Deserialize<T[]>((string)val, typeof(T) == typeof(byte) ? _jsonSerializerOptions : null);
+
+        if (newArray.Length != existingArray.Length)
+        {
+            _logger.WriteLine($"[{_modConfig.ModId}] Array in column {column.Name} changed length ({existingArray.Length} -> {newArray.Length}), ignoring change!", _logger.ColorRed);
+            return;
+        }
+
+        for (int i = 0; i < existingArray.Length; i++)
+        {
+            existingArray[i] = newArray[i];
+        }
+    }
+
+    private void HandleFileArrayChange<T>(INexRow gameRow, NexStructColumn column, T[] val, Span<T> existingArray)
+    {
+        if (val == null || existingArray.IsEmpty) { return; }
+        if (val.Length != existingArray.Length) { return; } // Dont log warning for file changes
+
+        for (int i = 0; i < existingArray.Length; i++)
+        {
+            existingArray[i] = val[i];
         }
     }
 
