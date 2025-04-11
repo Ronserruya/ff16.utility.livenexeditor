@@ -22,6 +22,11 @@ public class Config : Configurable<Config>
     [Description("Folder to monitor for nxd/sqlite files")]
     [DefaultValue("")]
     public string MonitorPath { get; set; } = "";
+
+    [DisplayName("Throttle before injecting")]
+    [Description("Wait for the specified amount of milliseconds before injecting the changes into the game\nDefaults: 1000 for NXD, 4000 for SQL DB")]
+    [DefaultValue(4000)]
+    public int ThrottleMilliseconds { get; set; }
 }
 
 /// <summary>
