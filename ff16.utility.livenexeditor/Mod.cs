@@ -13,6 +13,7 @@ using FF16Framework.Interfaces.Nex;
 
 using Microsoft.Data.Sqlite;
 using System.Text.Json;
+using System.Data.Common;
 namespace ff16.utility.livenexeditor;
 
 /// <summary>
@@ -53,11 +54,11 @@ public class Mod : ModBase // <= Do not Remove.
 
     private FileSystemWatcher? _watcher;
 
-    private Dictionary<string, SqliteConnection> _connections = new();
+    private HashSet<string> _trackedSqlFiles = new();
 
     private Dictionary<string, int> _lastSqlChangeRead = new();
 
-    private string _sqlite_changes_table = "_liveNex_changes";
+    private static readonly string _sqlite_changes_table = "_liveNex_changes";
 
     private IDisposable? _fileChangedObservable;
 
@@ -113,6 +114,7 @@ public class Mod : ModBase // <= Do not Remove.
             }
             fileTypes.Add("*.sqlite");
             var sqlFiles = Directory.GetFiles(_configuration.MonitorPath, "*.sqlite");
+            _trackedSqlFiles = new HashSet<string>(sqlFiles);
             foreach (var sqlFile in sqlFiles)
             {
                 PrepareSqlDB(sqlFile);
@@ -153,23 +155,13 @@ public class Mod : ModBase // <= Do not Remove.
         .GroupBy(eventData => eventData.FileType)
         .Subscribe(grouped =>
         {
-            var throttleTime = grouped.Key switch
-            {
-                "nxd" => TimeSpan.FromSeconds(1),
-                "sqlite" => TimeSpan.FromSeconds(4)
-            };
-
             grouped
                 .Do(eventData =>
                 {
-                    string logMessage = eventData.FileType switch
-                    {
-                        "nxd" => $"[{_modConfig.ModId}] Detected nxd change: {eventData.FullPath}, waiting 1 second for successive changes before processing...",
-                        "sqlite" => $"[{_modConfig.ModId}] Detected sqlite change: {eventData.FullPath}, waiting 4 seconds for successive changes before processing...",
-                    };
-                    _logger.WriteLine(logMessage);
+                    var secondsWait = _configuration.ThrottleMilliseconds / 1000;
+                    _logger.WriteLine($"[{_modConfig.ModId}] Detected {eventData.FileType} change: {eventData.FullPath}, waiting {secondsWait} seconds for successive changes before processing...");
                 })
-                .Throttle(throttleTime)
+                .Throttle(TimeSpan.FromMilliseconds(_configuration.ThrottleMilliseconds))
                 .Subscribe(eventData =>
                 {
                     switch (eventData.FileType)
@@ -189,7 +181,7 @@ public class Mod : ModBase // <= Do not Remove.
                 });
         });
 
-        _logger.WriteLine($"[{_modConfig.ModId}] Srarted watching for changes at path: {_configuration.MonitorPath}", _logger.ColorGreen);
+        _logger.WriteLine($"[{_modConfig.ModId}] Started watching for changes at path: {_configuration.MonitorPath}", _logger.ColorGreen);
     }
 
 
@@ -285,7 +277,8 @@ public class Mod : ModBase // <= Do not Remove.
     {
         _logger.WriteLine($"[{_modConfig.ModId}] Processing changes for sql file: {name}");
 
-        SqliteConnection connection = _connections[filePath];
+        using var connection = new SqliteConnection($"Data Source={filePath}");
+        connection.Open();
         var result = GetChangedTables(connection, _lastSqlChangeRead[filePath]);
         if (result is null)
         {
@@ -434,16 +427,15 @@ public class Mod : ModBase // <= Do not Remove.
     {
         _logger.WriteLine($"[{_modConfig.ModId}] Preparing required SQL internal tables for monitoring on sql db: {sqlFile}", _logger.ColorBlue);
 
-        var _connection = new SqliteConnection($"Data Source={sqlFile}");
-        _connections[sqlFile] = _connection;
         _lastSqlChangeRead[sqlFile] = 0;
+        using var _connection = new SqliteConnection($"Data Source={sqlFile}");
         _connection.Open();
+        using var transaction = _connection.BeginTransaction();
+        using var cmd = _connection.CreateCommand();
 
-        var cmd = _connection.CreateCommand();
         cmd.CommandText = $"DROP TABLE IF EXISTS {_sqlite_changes_table};";
         cmd.ExecuteNonQuery();
 
-        cmd = _connection.CreateCommand();
         cmd.CommandText = $@"
         CREATE TABLE {_sqlite_changes_table} (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -468,11 +460,9 @@ public class Mod : ModBase // <= Do not Remove.
                 continue;
             }
 
-            cmd = _connection.CreateCommand();
             cmd.CommandText = $@"DROP TRIGGER IF EXISTS _{table}_update_trigger";
             cmd.ExecuteNonQuery();
 
-            cmd = _connection.CreateCommand();
             cmd.CommandText = $@"
             CREATE TRIGGER _{table}_update_trigger
             AFTER UPDATE ON {table}
@@ -488,6 +478,7 @@ public class Mod : ModBase // <= Do not Remove.
             END";
             cmd.ExecuteNonQuery();
         }
+        transaction.Commit();
 
         _logger.WriteLine($"[{_modConfig.ModId}] Created internal triggers...", _logger.ColorBlue);
 
@@ -497,7 +488,7 @@ public class Mod : ModBase // <= Do not Remove.
     private static List<string> GetAllTables(SqliteConnection connection)
     {
         var tableNames = new List<string>();
-        var cmd = connection.CreateCommand();
+        using var cmd = connection.CreateCommand();
         cmd.CommandText = $@"SELECT name FROM sqlite_schema WHERE type='table' AND name NOT LIKE 'sqlite_%' AND name NOT LIKE '\_%' ESCAPE '\';";
 
         using (var reader = cmd.ExecuteReader())
@@ -511,10 +502,10 @@ public class Mod : ModBase // <= Do not Remove.
 
     private static (int, string[])? GetChangedTables(SqliteConnection connection, int lastChangeId)
     {
-        var cmd = connection.CreateCommand();
+        using var cmd = connection.CreateCommand();
         cmd.CommandText = $@"
             SELECT max(id) as lastChangeId, group_concat(tableName, ',') as changedTables FROM 
-            (SELECT max(id) as id, tableName from _liveNex_changes where id>{lastChangeId} group by tableName)
+            (SELECT max(id) as id, tableName from {_sqlite_changes_table} where id>{lastChangeId} group by tableName)
         ";
 
         using (var reader = cmd.ExecuteReader())
@@ -532,8 +523,10 @@ public class Mod : ModBase // <= Do not Remove.
 
     private void TearDownSql()
     {
-        foreach (SqliteConnection connection in _connections.Values)
+        Task.WaitAll(_trackedSqlFiles.Select(sqlFile => Task.Run(() =>
         {
+            using var connection = new SqliteConnection($"Data Source={sqlFile}");
+            connection.Open();
             var cmd = connection.CreateCommand();
             cmd.CommandText = $"DROP TABLE IF EXISTS {_sqlite_changes_table}";
             cmd.ExecuteNonQuery();
@@ -545,13 +538,7 @@ public class Mod : ModBase // <= Do not Remove.
                 cmd.CommandText = $@"DROP TRIGGER IF EXISTS _{table}_update_trigger";
                 cmd.ExecuteNonQuery();
             }
-            connection.Close();
-        }
-
-        if (_connections.Count > 0)
-        {
-            _logger.WriteLine($"[{_modConfig.ModId}] Finshed clearing up sql dbs");
-        }
+        })));
     }
 
     #region Standard Overrides
