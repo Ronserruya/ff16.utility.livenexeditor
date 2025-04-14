@@ -2,7 +2,7 @@
     "ModId": "ff16.utility.livenexeditor",
     "ModName": "Live Nex Editor",
     "ModAuthor": "Recoome",
-    "ModVersion": "1.0.1",
+    "ModVersion": "1.0.2",
     "ModDescription": "Allows editing of nex values in realtime.",
     "ModDll": "ff16.utility.livenexeditor.dll",
     "ModR2RManagedDll32": "x86/ff16.utility.livenexeditor.dll",
@@ -65,7 +65,7 @@
             }
         },
         "GitHubRelease": {
-            "UserName": "RonSerruya",
+            "UserName": "ronserruya",
             "RepositoryName": "ff16.utility.livenexeditor",
             "UseReleaseTag": true,
             "AssetFileName": "Mod.zip"
@@ -83,5 +83,5 @@
         "ffxvi.exe",
         "ffxvi_demo.exe"
     ],
-    "ProjectUrl": "https://github.com/Ronserruya/ff16.utility.livenexeditor"
+    "ProjectUrl": "https://github.com/ronserruya/ff16.utility.livenexeditor"
 }

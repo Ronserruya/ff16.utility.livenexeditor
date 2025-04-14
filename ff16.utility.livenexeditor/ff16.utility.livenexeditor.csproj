@@ -47,6 +47,10 @@
     <PackageReference Include="Reloaded.SharedLib.Hooks" Version="1.9.0" />
 	<PackageReference Include="System.Reactive" Version="6.0.1" />
 	<PackageReference Include="Microsoft.Data.Sqlite" Version="9.0.3" />
+	<PackageReference Include="Microsoft.Windows.CsWin32" Version="0.3.162">
+		<PrivateAssets>all</PrivateAssets>
+		<IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+	</PackageReference>
   </ItemGroup>
 	
   <!-- Get rid of dstorage dlls produced, we run inside the game so we don't need these -->

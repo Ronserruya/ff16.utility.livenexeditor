@@ -21,12 +21,18 @@ public class Config : Configurable<Config>
     [DisplayName("Folder to monitor for nxd/sqlite files")]
     [Description("Folder to monitor for nxd/sqlite files")]
     [DefaultValue("")]
+    [FolderPickerParams(chooseFolderButtonLabel: "Browse")]
     public string MonitorPath { get; set; } = "";
 
-    [DisplayName("Throttle before injecting")]
-    [Description("Wait for the specified amount of milliseconds before injecting the changes into the game\nDefaults: 1000 for NXD, 4000 for SQL DB")]
-    [DefaultValue(4000)]
-    public int ThrottleMilliseconds { get; set; }
+    [DisplayName("Delay in seconds before applying changes")]
+    [Description("Wait for the specified amount of seconds before injecting the changes into the game, minimum 0.5")]
+    [DefaultValue(4.0f)]
+    public float ThrottleSeconds { get; set; } = 4.0f;
+
+    [DisplayName("Attempt editing by index")]
+    [Description("Try to edit the data by using the column order instead of name, when the sqlite file was generated using older/newer FF16Tools vesrion, *can break stuff*")]
+    [DefaultValue(false)]
+    public bool AttemptEditByIndex { get; set; } = false;
 }
 
 /// <summary>
