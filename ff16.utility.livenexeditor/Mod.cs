@@ -73,6 +73,8 @@ public class Mod : ModBase // <= Do not Remove.
 
     private IHook<ExitProcess> _exitProcessHook;
 
+    public string[] languageCodes = new[] { "ar", "cs", "ct", "de", "en", "es", "fr", "it", "ja", "ko", "ls" };
+
     private void ExitProcessImpl(uint uexitcode)
     {
         _fileChangedObservable?.Dispose();
@@ -240,6 +242,7 @@ public class Mod : ModBase // <= Do not Remove.
         _managedNexApi.TryGetTarget(out var nextExcelDBApi);
 
         string nexTableName = name.Split(".")[0];
+
         if (!Enum.TryParse<NexTableIds>(nexTableName, ignoreCase: false, out var tableEnum))
         {
             _logger.WriteLine($"[{_modConfig.ModId}] Unable to fetch table for file: {name}", _logger.ColorRed);
@@ -248,7 +251,7 @@ public class Mod : ModBase // <= Do not Remove.
         INexTable? table = nextExcelDBApi.GetTable(tableEnum);
 
 
-        NexTableLayout layout = TableMappingReader.ReadTableLayout(nexTableName, new Version(1, 0, 3));
+        NexTableLayout layout = TableMappingReader.ReadTableLayout(nexTableName, new Version(1, 0, 3), "faith");
 
         NexDataFile nexFile = NexDataFile.FromFile(filePath);
         List<NexRowInfo> fileRows = nexFile.RowManager.GetAllRowInfos();
@@ -338,19 +341,26 @@ public class Mod : ModBase // <= Do not Remove.
 
     private void ProcessTableChanges(SqliteConnection connection, string tableName, int previousReadChangeId)
     {
+        tableName = tableName.Replace("\"", "");
+        var tableNameNoSuffix = tableName;
+
+        if (languageCodes.Any(code => tableName.EndsWith($"-{code}")))
+        {
+            tableNameNoSuffix = tableName.Substring(0, tableName.Length - 3);
+        }
 
         _logger.WriteLine($"[{_modConfig.ModId}] Processing changes to table: {tableName}...", _logger.ColorBlue);
 
         _managedNexApi.TryGetTarget(out var nextExcelDBApi);
 
-        INexTable? table = nextExcelDBApi.GetTable(Enum.Parse<NexTableIds>(tableName));
-        NexTableLayout layout = TableMappingReader.ReadTableLayout(tableName, new Version(1, 0, 0));
+        INexTable? table = nextExcelDBApi.GetTable(Enum.Parse<NexTableIds>(tableNameNoSuffix, ignoreCase: true));
+        NexTableLayout layout = TableMappingReader.ReadTableLayout(tableNameNoSuffix, new Version(1, 0, 0), "faith");
         FF16Tools.Files.Nex.NexTableType tableType = layout.Type;
 
         var cmd = connection.CreateCommand();
         cmd.CommandText = $@"
-        SELECT a.* FROM {tableName} a join 
-        (SELECT DISTINCT Key1, Key2, Key3 FROM {_sqlite_changes_table} WHERE id>{previousReadChangeId} and tableName='{tableName}') b ON 
+        SELECT a.* FROM ""{tableName}"" a join 
+        (SELECT DISTINCT Key1, Key2, Key3 FROM {_sqlite_changes_table} WHERE id>{previousReadChangeId} and tableName='""{tableName}""') b ON 
         (
             a.Key==b.Key1 and 
             {(layout.Type == FF16Tools.Files.Nex.NexTableType.DoubleKeyed ? "a.Key2" : 0)}==b.Key2 and 
@@ -515,27 +525,34 @@ public class Mod : ModBase // <= Do not Remove.
 
         var tables = GetAllTables(_connection);
 
-        foreach (var table in tables)
+        for (int i = 0; i < tables.Count; i++)
         {
+            var table = tables[i];
+            var tableNoSuffix = table;
 
-            NexTableLayout layout = TableMappingReader.ReadTableLayout(table, new Version(1, 0, 0));
+            if (languageCodes.Any(code => table.EndsWith($"-{code}")))
+            {
+                tableNoSuffix = table.Substring(0, table.Length - 3);
+            }
+
+            NexTableLayout layout = TableMappingReader.ReadTableLayout(tableNoSuffix, new Version(1, 0, 0), "faith");
             if (layout is null)
             {
-                _logger.WriteLine($"[{_modConfig.ModId}] Found unrecognized table {table} without matching nex table, skipping", _logger.ColorRedLight);
+                _logger.WriteLine($"[{_modConfig.ModId}] Found unrecognized table {tableNoSuffix} without matching nex table, skipping", _logger.ColorRedLight);
                 continue;
             }
 
-            cmd.CommandText = $@"DROP TRIGGER IF EXISTS _{table}_update_trigger";
+            cmd.CommandText = $@"DROP TRIGGER IF EXISTS ""_{table}_update_trigger""";
             cmd.ExecuteNonQuery();
 
             cmd.CommandText = $@"
-            CREATE TRIGGER _{table}_update_trigger
-            AFTER UPDATE ON {table}
+            CREATE TRIGGER ""_{table}_update_trigger""
+            AFTER UPDATE ON ""{table}""
             FOR EACH ROW
             BEGIN
                 INSERT INTO {_sqlite_changes_table} (tableName, Key1, Key2, Key3)
                 VALUES (
-                    '{table}',
+                    '""{table}""',
                     OLD.Key,
                     {(layout.Type == FF16Tools.Files.Nex.NexTableType.SingleKeyed ? 0 : "OLD.Key2")},
                     {(layout.Type == FF16Tools.Files.Nex.NexTableType.TripleKeyed ? "OLD.Key3" : 0)}
