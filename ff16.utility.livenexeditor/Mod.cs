@@ -17,6 +17,7 @@ using System.Text.Json;
 using Reloaded.Hooks.Definitions;
 using System.Runtime.InteropServices;
 using System.Data.Common;
+using System.Text.RegularExpressions;
 namespace ff16.utility.livenexeditor;
 
 /// <summary>
@@ -73,7 +74,8 @@ public class Mod : ModBase // <= Do not Remove.
 
     private IHook<ExitProcess> _exitProcessHook;
 
-    public string[] languageCodes = new[] { "ar", "cs", "ct", "de", "en", "es", "fr", "it", "ja", "ko", "ls" };
+    public static HashSet<string> languageCodes = new() { "ar", "cs", "ct", "de", "en", "es", "fr", "it", "ja", "ko", "ls" };
+    public static string langSuffixPattern = $"-({string.Join("|", languageCodes)})$";
 
     private void ExitProcessImpl(uint uexitcode)
     {
@@ -344,7 +346,7 @@ public class Mod : ModBase // <= Do not Remove.
         tableName = tableName.Replace("\"", "");
         var tableNameNoSuffix = tableName;
 
-        if (languageCodes.Any(code => tableName.EndsWith($"-{code}")))
+        if (Regex.IsMatch(tableName, langSuffixPattern))
         {
             tableNameNoSuffix = tableName.Substring(0, tableName.Length - 3);
         }
@@ -530,7 +532,7 @@ public class Mod : ModBase // <= Do not Remove.
             var table = tables[i];
             var tableNoSuffix = table;
 
-            if (languageCodes.Any(code => table.EndsWith($"-{code}")))
+            if (Regex.IsMatch(table, langSuffixPattern))
             {
                 tableNoSuffix = table.Substring(0, table.Length - 3);
             }
@@ -617,7 +619,7 @@ public class Mod : ModBase // <= Do not Remove.
             foreach (var table in tables)
             {
                 cmd = connection.CreateCommand();
-                cmd.CommandText = $@"DROP TRIGGER IF EXISTS _{table}_update_trigger";
+                cmd.CommandText = $@"DROP TRIGGER IF EXISTS ""_{table}_update_trigger""";
                 cmd.ExecuteNonQuery();
             }
         })));
